@@ -13,15 +13,18 @@ fn main() -> io::Result<()> {
         State_Str,
         State_First_Num,
         State_Last_Num,
+        State_Do,
+        State_Dont,
     }
 
     let mut state: States = States::State_Start;
-
+    let mut dontvalid = 0;
     // A Vec<u8> is used because read_until works with raw bytes, not characters or text.
     // After reading, the Vec<u8> is converted into a String to work with UTF-8 text.
     // This separation ensures safety and flexibility when handling potentially non-textual or binary data.
 
     let mut sum = 0;
+    let mut flag = true;
     while reader.read_until(b'\n', &mut buf)? != 0 {
         let s = String::from_utf8(buf).expect("");
         let mut str_buff = Vec::<u8>::new();
@@ -60,6 +63,9 @@ fn main() -> io::Result<()> {
                         if str_buff == b"mul" {
                             state = States::State_First_Num;
                             continue;
+                        } else if &str_buff[str_buff.len() - 2..] == b"do" {
+                            state = States::State_Do;
+                            continue;
                         } else {
                             state = States::State_Start;
                             str_buff.clear();
@@ -68,14 +74,48 @@ fn main() -> io::Result<()> {
                             // clean all buffers
                             continue;
                         }
+                    } else if c == '\'' {
+                        if str_buff == b"don" {
+                            state = States::State_Dont;
+                            continue;
+                        }
                     } else {
                         state = States::State_Start;
                         str_buff.clear();
                         first_num.clear();
                         last_num.clear();
                         continue;
-                        // clean all buffers
                     }
+                }
+                States::State_Do => {
+                    if c == ')' {
+                        flag = true;
+                    }
+                    state = States::State_Start;
+                    str_buff.clear();
+                    first_num.clear();
+                    last_num.clear();
+                    continue;
+                }
+                States::State_Dont => {
+                    println!("Jonied");
+                    if c == 't' && dontvalid == 0 {
+                        dontvalid = 1;
+                        continue;
+                    }
+                    if c == '(' && dontvalid == 1 {
+                        dontvalid = 2;
+                        continue;
+                    }
+                    if c == ')' && dontvalid == 2 {
+                        flag = false;
+                    }
+                    dontvalid = 0;
+                    state = States::State_Start;
+                    str_buff.clear();
+                    first_num.clear();
+                    last_num.clear();
+                    continue;
                 }
                 States::State_First_Num => {
                     if c.is_digit(10) {
@@ -132,7 +172,10 @@ fn main() -> io::Result<()> {
                             .unwrap()
                             .parse::<u64>()
                             .unwrap();
-                        sum += num1 * num2;
+
+                        if flag {
+                            sum += num1 * num2;
+                        }
                         str_buff.clear();
                         first_num.clear();
                         last_num.clear();

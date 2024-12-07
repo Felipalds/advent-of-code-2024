@@ -52,23 +52,40 @@ fn main() -> io::Result<()> {
 }
 
 fn exercise(vec: &Vec<i32>, hash_map: &HashMap<i32, Vec<i32>>) -> i32 {
-    if vec.len() == 0 {
+    let mut new_vec = vec.clone();
+    println!("{:?}", new_vec);
+    if new_vec.len() == 0 {
         return 0;
     }
     let mut valid = true;
-    for i in 0..vec.len() {
-        for j in i + 1..vec.len() {
+    for i in 0..new_vec.len() {
+        for j in i + 1..new_vec.len() {
             let cur_vec = hash_map.get(&vec[i]).expect("Doens exists");
-            let cmp_val = vec[j];
+            let cmp_val = new_vec[j];
             if !cur_vec.contains(&cmp_val) {
-                valid = false;
+                valid = false
             }
         }
     }
-
     if valid {
-        return vec[vec.len() / 2];
-    } else {
         return 0;
+    } else {
+        while !valid {
+            valid = true;
+            for i in 0..new_vec.len() {
+                for j in i + 1..new_vec.len() {
+                    let cur_vec = hash_map.get(&vec[i]).expect("Doens exists");
+                    let cmp_val = new_vec[j];
+                    if !cur_vec.contains(&cmp_val) {
+                        println!("{:?}", new_vec);
+
+                        valid = false;
+                        new_vec.swap(i, j);
+                        break;
+                    }
+                }
+            }
+        }
+        return vec[vec.len() / 2];
     }
 }
